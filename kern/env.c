@@ -374,8 +374,7 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 
 		region_alloc(e, (void *)ph->p_va, ph->p_memsz);
 		memmove((void *)ph->p_va, (void *)(binary+ph->p_offset), ph->p_filesz);
-		memset(binary + ph->p_offset + ph->p_filesz, 0,
-				ph->p_memsz-ph->p_filesz);
+		memset((void *)(ph->p_va + ph->p_filesz), 0, ph->p_memsz - ph->p_filesz);
 	}
 
 	// setup env's eip to e_entry
@@ -526,12 +525,12 @@ env_run(struct Env *e)
 
 	// LAB 3: Your code here.
 	if(e != curenv){
-		if(curenv->env_status == ENV_RUNNING)
+		if(curenv && curenv->env_status == ENV_RUNNING)
 			curenv->env_status = ENV_RUNNABLE;
 		curenv = e;
 		curenv->env_status = ENV_RUNNING;
 		curenv->env_runs++;
-		lcr3(*curenv->env_pgdir);
+		lcr3(PADDR((void *)curenv->env_pgdir));
 	}
 
 	env_pop_tf(&curenv->env_tf);
