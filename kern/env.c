@@ -384,11 +384,15 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	// at virtual address USTACKTOP - PGSIZE.
 
 	// LAB 3: Your code here.
+	region_alloc(e, (void*)USTACKTOP - PGSIZE, PGSIZE);
+
+	/* TODO: Why below lines doesn't work?
 	pp = page_alloc(0);
 	if(!pp)
 		panic("load_icode failed: page_alloc() fail");
-
+	pp->pp_ref++;
 	page_insert(e->env_pgdir, pp, (void *)(USTACKTOP - PGSIZE), PTE_W);
+	*/
 }
 
 //
@@ -406,8 +410,10 @@ env_create(uint8_t *binary, size_t size, enum EnvType type)
 
 	env_alloc(&e, 0);
 	if(e){
+		lcr3(PADDR((uint32_t *)e->env_pgdir));
 		load_icode(e, binary, size);
 		e->env_type = type;
+		lcr3(PADDR((uint32_t *)kern_pgdir));
 	}
 }
 
