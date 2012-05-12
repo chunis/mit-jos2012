@@ -166,7 +166,6 @@ env_init_percpu(void)
 static int
 env_setup_vm(struct Env *e)
 {
-	int i;
 	struct Page *p = NULL;
 
 	// Allocate a page for the page directory
@@ -191,13 +190,8 @@ env_setup_vm(struct Env *e)
 
 	// LAB 3: Your code here.
 	e->env_pgdir = (pde_t *)PTE_ADDR(page2kva(p));
+	memmove(e->env_pgdir, kern_pgdir, PGSIZE);
 	p->pp_ref++;
-
-	for(i=0; i<PDX(UTOP); i++)
-		e->env_pgdir[i] = 0;
-
-	for(i=PDX(UTOP); i<NPDENTRIES; i++)
-		e->env_pgdir[i] = kern_pgdir[i];
 
 	// UVPT maps the env's own page table read-only.
 	// Permissions: kernel R, user R
