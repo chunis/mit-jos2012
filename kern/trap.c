@@ -9,24 +9,7 @@
 #include <kern/env.h>
 #include <kern/syscall.h>
 
-void divide_err(void);
-void debug_exception(void);
-void nmi(void);
-void breakpoint(void);
-void overflow(void);
-void bounds_check(void);
-void illegal_opcode(void);
-void dev_not_avail(void);
-void double_fault(void);
-void invalid_tss(void);
-void segment_not_present(void);
-void stack_exception(void);
-void general_protect(void);
-void page_fault(void);
-void fp_err(void);
-void alig_check(void);
-void machine_check(void);
-void simd_fp_err(void);
+extern long isrs[256];
 
 static struct Taskstate ts;
 
@@ -84,24 +67,12 @@ trap_init(void)
 	extern struct Segdesc gdt[];
 
 	// LAB 3: Your code here.
-	SETGATE(idt[T_DIVIDE], 1, GD_KT, divide_err, 0);
-	SETGATE(idt[T_DEBUG], 1, GD_KT, debug_exception, 0);
-	SETGATE(idt[T_NMI], 1, GD_KT, nmi, 0);
-	SETGATE(idt[T_BRKPT], 1, GD_KT, breakpoint, 0);
-	SETGATE(idt[T_OFLOW], 1, GD_KT, overflow, 0);
-	SETGATE(idt[T_BOUND], 1, GD_KT, bounds_check, 0);
-	SETGATE(idt[T_ILLOP], 1, GD_KT, illegal_opcode, 0);
-	SETGATE(idt[T_DEVICE], 1, GD_KT, dev_not_avail, 0);
-	SETGATE(idt[T_DBLFLT], 1, GD_KT, double_fault, 0);
-	SETGATE(idt[T_TSS], 1, GD_KT, invalid_tss, 0);
-	SETGATE(idt[T_SEGNP], 1, GD_KT, segment_not_present, 0);
-	SETGATE(idt[T_STACK], 1, GD_KT, stack_exception, 0);
-	SETGATE(idt[T_GPFLT], 1, GD_KT, general_protect, 0);
-	SETGATE(idt[T_PGFLT], 1, GD_KT, page_fault, 0);
-	SETGATE(idt[T_FPERR], 1, GD_KT, fp_err, 0);
-	SETGATE(idt[T_ALIGN], 1, GD_KT, alig_check, 0);
-	SETGATE(idt[T_MCHK], 1, GD_KT, machine_check, 0);
-	SETGATE(idt[T_SIMDERR], 1, GD_KT, simd_fp_err, 0);
+	int i;
+	for(i=0; i<256; i++){
+		SETGATE(idt[i], 1, GD_KT, isrs[i], 0);
+	}
+	SETGATE(idt[T_BRKPT], 0, GD_KT, isrs[T_BRKPT], 3);
+	SETGATE(idt[T_SYSCALL], 0, GD_KT, isrs[T_SYSCALL], 3);
 
 	// Per-CPU setup 
 	trap_init_percpu();
@@ -181,7 +152,11 @@ trap_dispatch(struct Trapframe *tf)
 	// Handle processor exceptions.
 	// LAB 3: Your code here.
 	cprintf("trapno: %d\n", tf->tf_trapno);
-	if(tf->tf_trapno == T_PGFLT){
+	if(tf->tf_trapno == T_BRKPT){
+		monitor(tf);
+		return;
+	}
+	else if(tf->tf_trapno == T_PGFLT){
 		page_fault_handler(tf);
 		return;
 	}
