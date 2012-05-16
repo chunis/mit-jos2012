@@ -384,7 +384,8 @@ load_icode(struct Env *e, uint8_t *binary, size_t size)
 	pp = page_alloc(0);
 	if(!pp)
 		panic("load_icode failed: page_alloc() fail");
-	pp->pp_ref++;
+
+	// page_insert() will increase pp->pp_ref.
 	page_insert(e->env_pgdir, pp, (void *)(USTACKTOP - PGSIZE), PTE_W);
 	*/
 }
