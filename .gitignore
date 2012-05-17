@@ -13,3 +13,5 @@
 /lab?/
 /sol?/
 /conf/lab.mk
+cscope.*
+*.swp
