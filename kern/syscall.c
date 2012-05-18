@@ -273,7 +273,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	// LAB 3: Your code here.
 	int ret = 0;
 
-	if(syscallno < 0 || syscallno > NSYSCALLS)
+	if(syscallno < 0 || syscallno >= NSYSCALLS)
 		return -E_INVAL;
 	
 	switch(syscallno){
@@ -290,7 +290,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 			ret = sys_env_destroy(a1);
 			break;
 		default:
-			panic("How can this happened?");
+			panic("syscallno %d needs process", syscallno);
 			break;
 	}
 	curenv->env_tf.tf_regs.reg_eax = (uint32_t)ret;
