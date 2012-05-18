@@ -272,7 +272,7 @@ mem_init_mp(void)
 {
 	// Create a direct mapping at the top of virtual address space starting
 	// at IOMEMBASE for accessing the LAPIC unit using memory-mapped I/O.
-	boot_map_region(kern_pgdir, IOMEMBASE, -IOMEMBASE, IOMEM_PADDR, PTE_W);
+	boot_map_region(kern_pgdir, IOMEMBASE, -IOMEMBASE, IOMEM_PADDR, PTE_W|PTE_P);
 
 	// Map per-CPU stacks starting at KSTACKTOP, for up to 'NCPU' CPUs.
 	//
@@ -290,6 +290,15 @@ mem_init_mp(void)
 	//     Permissions: kernel RW, user NONE
 	//
 	// LAB 4: Your code here:
+	int i;
+	// for(i=0; i<ncpu; i++){
+	for(i=0; i<NCPU; i++){
+		boot_map_region(kern_pgdir,
+				(KSTACKTOP - KSTKSIZE - i * (KSTKSIZE + KSTKGAP)),
+				KSTKSIZE,
+				PADDR(percpu_kstacks[i]),
+				(PTE_W|PTE_P));
+	}
 
 }
 
