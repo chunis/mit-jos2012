@@ -337,6 +337,11 @@ page_init(void)
 
 	// mark other base memory as free
 	for (i = 1; i < npages_basemem; i++) {
+		if(i == (MPENTRY_PADDR/PGSIZE)){
+			pages[i].pp_ref = 1;
+			pages[i].pp_link = 0;
+			continue;
+		}
 		pages[i].pp_ref = 0;
 		pages[i].pp_link = page_free_list;
 		page_free_list = &pages[i];
