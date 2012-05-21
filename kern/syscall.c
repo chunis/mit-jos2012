@@ -93,13 +93,12 @@ sys_exofork(void)
 	if(err)
 		return err;
 
-	memmove(&env->env_tf, &curenv->env_tf, sizeof(curenv->env_tf));
 	env->env_status = ENV_NOT_RUNNABLE;
+	memmove(&env->env_tf, &curenv->env_tf, sizeof(curenv->env_tf));
+	env->env_parent_id = old_eid;
+	env->env_tf.tf_regs.reg_eax = 0;
 
-	if(curenv->env_id == old_eid)
-		return env->env_id;
-	else
-		return 0;
+	return env->env_id;
 }
 
 // Set envid's env_status to status, which must be ENV_RUNNABLE
