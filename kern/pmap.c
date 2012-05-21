@@ -11,7 +11,6 @@
 #include <kern/env.h>
 #include <kern/cpu.h>
 
-#define DBG(x) (cprintf("line %d: " #x " = %x\n", __LINE__, x))
 
 // These variables are set by i386_detect_memory()
 size_t npages;			// Amount of physical memory (in pages)
