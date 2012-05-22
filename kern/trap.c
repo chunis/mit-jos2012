@@ -334,11 +334,6 @@ page_fault_handler(struct Trapframe *tf)
 		goto err;
 	}
 
-	// do some check
-	user_mem_assert(curenv, curenv->env_pgfault_upcall, 1, (PTE_U | PTE_P));
-	user_mem_assert(curenv, (void *)(UXSTACKTOP - PGSIZE),
-						PGSIZE, (PTE_U | PTE_W | PTE_P));
-
 	if(tf->tf_esp >= UXSTACKTOP-PGSIZE && tf->tf_esp < UXSTACKTOP){
 		utfp = (void *)((uint8_t *)tf->tf_esp - 4
                              - sizeof(struct UTrapframe));
@@ -348,6 +343,13 @@ page_fault_handler(struct Trapframe *tf)
 	} else {
 		goto err;
 	}
+
+	// do some check
+	user_mem_assert(curenv, (void *)utfp, sizeof(struct UTrapframe),
+					(PTE_U | PTE_W | PTE_P));
+	user_mem_assert(curenv, curenv->env_pgfault_upcall, 1, (PTE_U | PTE_P));
+	user_mem_assert(curenv, (void *)(UXSTACKTOP - PGSIZE),
+					PGSIZE, (PTE_U | PTE_W | PTE_P));
 
 	utfp->utf_fault_va = fault_va;
 	utfp->utf_err = tf->tf_err;
