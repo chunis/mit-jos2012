@@ -67,6 +67,24 @@ TRAPHANDLER_NOEC(fp_err, T_FPERR)          // 16	floating point error
 TRAPHANDLER(alig_check, T_ALIGN)           // 17	aligment check
 TRAPHANDLER_NOEC(machine_check, T_MCHK)    // 18	machine check
 TRAPHANDLER_NOEC(simd_fp_err, T_SIMDERR)   // 19	SIMD floating point error
+
+TRAPHANDLER_NOEC(irq0, IRQ_OFFSET+0)		// IRQ_TIMER
+TRAPHANDLER_NOEC(irq1, IRQ_OFFSET+1)		// IRQ_KBD
+TRAPHANDLER_NOEC(irq2, IRQ_OFFSET+2)
+TRAPHANDLER_NOEC(irq3, IRQ_OFFSET+3)
+TRAPHANDLER_NOEC(irq4, IRQ_OFFSET+4)		// IRQ_SERIAL
+TRAPHANDLER_NOEC(irq5, IRQ_OFFSET+5)
+TRAPHANDLER_NOEC(irq6, IRQ_OFFSET+6)
+TRAPHANDLER_NOEC(irq7, IRQ_OFFSET+7)		// IRQ_SPURIOUS
+TRAPHANDLER_NOEC(irq8, IRQ_OFFSET+8)
+TRAPHANDLER_NOEC(irq9, IRQ_OFFSET+9)
+TRAPHANDLER_NOEC(irq10, IRQ_OFFSET+10)
+TRAPHANDLER_NOEC(irq11, IRQ_OFFSET+11)
+TRAPHANDLER_NOEC(irq12, IRQ_OFFSET+12)
+TRAPHANDLER_NOEC(irq13, IRQ_OFFSET+13)
+TRAPHANDLER_NOEC(irq14, IRQ_OFFSET+14)		// IRQ_IDE
+TRAPHANDLER_NOEC(irq15, IRQ_OFFSET+15)
+
 TRAPHANDLER_NOEC(_syscall, T_SYSCALL)      // 48	system call
 
 /*
@@ -108,6 +126,21 @@ isrs:
 	.long machine_check
 	.long simd_fp_err
 .fill 12, 4, 0			// 20~31 is reserved
-.fill 0x10, 4, 0		// 0x20~0x2f is for IRQ
+	.long irq0
+	.long irq1
+	.long irq2
+	.long irq3
+	.long irq4
+	.long irq5
+	.long irq6
+	.long irq7
+	.long irq8
+	.long irq9
+	.long irq10
+	.long irq11
+	.long irq12
+	.long irq13
+	.long irq14
+	.long irq15
 	.long _syscall
 .fill 0xcf, 4, 0		//  0x31~0xff (0xcf items) is reserved

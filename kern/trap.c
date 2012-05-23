@@ -76,7 +76,11 @@ trap_init(void)
 	// LAB 3: Your code here.
 	int i;
 	for(i=0; i<256; i++){
-		SETGATE(idt[i], 1, GD_KT, isrs[i], 0);
+		if(i>=32 && i<47){	// for IRQs
+			SETGATE(idt[i], 0, GD_KT, isrs[i], 0);
+		} else {
+			SETGATE(idt[i], 1, GD_KT, isrs[i], 0);
+		}
 	}
 	SETGATE(idt[T_BRKPT], 0, GD_KT, isrs[T_BRKPT], 3);
 	SETGATE(idt[T_SYSCALL], 0, GD_KT, isrs[T_SYSCALL], 3);
