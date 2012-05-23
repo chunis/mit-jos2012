@@ -110,6 +110,7 @@ fork(void)
 	uint8_t *addr;
 	int r;
 	extern unsigned char end[];
+	int i, j, pn;
 
 	set_pgfault_handler(pgfault);
 
@@ -121,10 +122,23 @@ fork(void)
 		return 0;
 	}
 
+#if 1
+	for(i=0; i<PDX(UTOP); i++){
+		if(!(vpd[i] & PTE_P))
+			continue;
+
+		for(j=0; j<NPTENTRIES; j++){
+			pn = i*NPTENTRIES+j;
+			if(pn != PGNUM(UXSTACKTOP-PGSIZE))
+				duppage(envid, pn);
+		}
+	}
+#else
 	// We are the parent
 	for (addr = (uint8_t*) UTEXT; addr < end; addr += PGSIZE)
 		duppage(envid, (uint32_t)addr>>PGSHIFT);
 	duppage(envid, ((uint32_t)&addr>>PGSHIFT));
+#endif
 
 	// process the exception stack
 	if ((r = sys_page_alloc(envid, (void *)(UXSTACKTOP-PGSIZE),
