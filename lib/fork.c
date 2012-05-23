@@ -146,7 +146,9 @@ fork(void)
 		panic("sys_page_alloc: %e", r);
 
 	// setup page fault handler
-	sys_env_set_pgfault_upcall(envid, thisenv->env_pgfault_upcall);
+	if( (r = sys_env_set_pgfault_upcall(envid,
+				thisenv->env_pgfault_upcall)) < 0)
+		panic("sys_env_set_pgfault_upcall: %e", r);
 
 	// Start the child environment running
 	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0)

@@ -390,7 +390,7 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 			break;
 		case SYS_page_map:
 			ret = sys_page_map((envid_t)a1, (void *)a2,
-								(envid_t)a3, (void *)a4, a5);
+						(envid_t)a3, (void *)a4, a5);
 			break;
 		case SYS_page_unmap:
 			ret = sys_page_unmap((envid_t)a1, (void *)a2);
