@@ -25,6 +25,10 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 4: Your code here.
+	if(!(err & PTE_W))
+		panic("pgfault: not writable");
+	if(!(vpt[(uint32_t)addr<<PGSHIFT] & PTE_COW))
+		panic("pgfault: not copy-on-write");
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
 	// copy the data from the old page to the new page, then move the new
@@ -34,8 +38,16 @@ pgfault(struct UTrapframe *utf)
 	//   No need to explicitly delete the old page's mapping.
 
 	// LAB 4: Your code here.
+	if ((r = sys_page_alloc(0, PFTEMP, PTE_P|PTE_U|PTE_W)) < 0)
+		panic("sys_page_alloc: %e", r);
 
-	panic("pgfault not implemented");
+	memmove(PFTEMP, (void *)PTE_ADDR(addr), PGSIZE);
+
+	if ((r = sys_page_map(0, PFTEMP, 0, (void *)PTE_ADDR(addr),
+					PTE_P|PTE_U|PTE_W)) < 0)
+		panic("sys_page_map: %e", r);
+	if ((r = sys_page_unmap(0, PFTEMP)) < 0)
+		panic("sys_page_unmap: %e", r);
 }
 
 //
@@ -55,7 +67,22 @@ duppage(envid_t envid, unsigned pn)
 	int r;
 
 	// LAB 4: Your code here.
-	panic("duppage not implemented");
+	if(vpt[pn] & (PTE_W|PTE_COW)){
+		if((r = sys_page_map(0, (void *)(pn<<PGSHIFT),
+					envid, (void *)(pn<<PGSHIFT),
+					PTE_P|PTE_U|PTE_COW)) < 0)
+			return r;
+		if((r = sys_page_map(0, (void *)(pn<<PGSHIFT),
+					0, (void *)(pn<<PGSHIFT),
+					PTE_P|PTE_U|PTE_COW)) < 0)
+			return r;
+	} else{	// page is readonly
+		if((r = sys_page_map(0, (void *)(pn<<PGSHIFT),
+					envid, (void *)(pn<<PGSHIFT),
+					PTE_P|PTE_U)) < 0)
+			return r;
+	}
+
 	return 0;
 }
 
@@ -79,7 +106,37 @@ envid_t
 fork(void)
 {
 	// LAB 4: Your code here.
-	panic("fork not implemented");
+	envid_t envid;
+	uint8_t *addr;
+	int r;
+	extern unsigned char end[];
+
+	envid = sys_exofork();
+	if(envid < 0)
+		panic("sys_exofork: %e", envid);
+	if(envid == 0){
+		thisenv = &envs[ENVX(sys_getenvid())];
+		return 0;
+	}
+
+	// We are the parent
+	for (addr = (uint8_t*) UTEXT; addr < end; addr += PGSIZE)
+		duppage(envid, (uint32_t)addr<<PGSHIFT);
+
+	// process the exception stack
+	if ((r = sys_page_alloc(envid, (void *)(UXSTACKTOP-PGSIZE),
+				PTE_P|PTE_U|PTE_W)) < 0)
+		panic("sys_page_alloc: %e", r);
+
+	// setup page fault handler
+	set_pgfault_handler(pgfault);
+	sys_env_set_pgfault_upcall(envid, pgfault);
+
+	// Start the child environment running
+	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0)
+		panic("sys_env_set_status: %e", r);
+
+	return envid;
 }
 
 // Challenge!
