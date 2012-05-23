@@ -27,7 +27,7 @@ pgfault(struct UTrapframe *utf)
 	// LAB 4: Your code here.
 	if(!(err & FEC_WR))
 		panic("pgfault: not writable");
-	if(!(vpt[(uint32_t)addr<<PGSHIFT] & PTE_COW))
+	if(!(vpt[(uint32_t)addr>>PGSHIFT] & PTE_COW))
 		panic("pgfault: not copy-on-write");
 
 	// Allocate a new page, map it at a temporary location (PFTEMP),
