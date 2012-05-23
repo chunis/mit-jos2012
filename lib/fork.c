@@ -25,7 +25,7 @@ pgfault(struct UTrapframe *utf)
 	//   (see <inc/memlayout.h>).
 
 	// LAB 4: Your code here.
-	if(!(err & PTE_W))
+	if(!(err & FEC_WR))
 		panic("pgfault: not writable");
 	if(!(vpt[(uint32_t)addr<<PGSHIFT] & PTE_COW))
 		panic("pgfault: not copy-on-write");
@@ -76,7 +76,7 @@ duppage(envid_t envid, unsigned pn)
 					0, (void *)(pn<<PGSHIFT),
 					PTE_P|PTE_U|PTE_COW)) < 0)
 			return r;
-	} else{	// page is readonly
+	} else {    // page is readonly
 		if((r = sys_page_map(0, (void *)(pn<<PGSHIFT),
 					envid, (void *)(pn<<PGSHIFT),
 					PTE_P|PTE_U)) < 0)
@@ -111,6 +111,8 @@ fork(void)
 	int r;
 	extern unsigned char end[];
 
+	set_pgfault_handler(pgfault);
+
 	envid = sys_exofork();
 	if(envid < 0)
 		panic("sys_exofork: %e", envid);
@@ -121,7 +123,8 @@ fork(void)
 
 	// We are the parent
 	for (addr = (uint8_t*) UTEXT; addr < end; addr += PGSIZE)
-		duppage(envid, (uint32_t)addr<<PGSHIFT);
+		duppage(envid, (uint32_t)addr>>PGSHIFT);
+	duppage(envid, ((uint32_t)&addr>>PGSHIFT));
 
 	// process the exception stack
 	if ((r = sys_page_alloc(envid, (void *)(UXSTACKTOP-PGSIZE),
@@ -129,8 +132,7 @@ fork(void)
 		panic("sys_page_alloc: %e", r);
 
 	// setup page fault handler
-	set_pgfault_handler(pgfault);
-	sys_env_set_pgfault_upcall(envid, pgfault);
+	sys_env_set_pgfault_upcall(envid, thisenv->env_pgfault_upcall);
 
 	// Start the child environment running
 	if ((r = sys_env_set_status(envid, ENV_RUNNABLE)) < 0)
