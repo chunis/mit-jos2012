@@ -113,6 +113,7 @@ runtest1 spin \
 
 qemuopts="$qemuopts -smp 2"
 
+timeout=30
 runtest1 stresssched \
 	".000010... stresssched on CPU 0" \
 	".000010... stresssched on CPU 1" \
