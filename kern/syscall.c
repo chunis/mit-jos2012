@@ -338,7 +338,44 @@ static int
 sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 {
 	// LAB 4: Your code here.
-	panic("sys_ipc_try_send not implemented");
+	struct Env *env;
+	int r;
+	pte_t *pte;
+
+	if((r = envid2env(envid, &env, 0)) < 0)
+		return r;
+	if(env->env_ipc_recving != 0)
+		return -E_IPC_NOT_RECV;
+
+	if((uint32_t)srcva < UTOP){
+		if((uint32_t)srcva != PTE_ADDR(srcva))
+			return -E_INVAL;
+
+		// check perm
+		if( !(perm & PTE_U) || !(perm & PTE_P) )
+			return -E_INVAL;
+		if( perm & ~(PTE_U | PTE_P | PTE_AVAIL | PTE_W) )
+			return -E_INVAL;
+
+		pte = pgdir_walk(curenv->env_pgdir, srcva, 0);
+		if(!pte)
+			return -E_INVAL;
+		if((*pte & PTE_W) != (perm & PTE_W))
+			return -E_INVAL;
+	}
+
+	env->env_ipc_recving = 0;
+	env->env_ipc_from = curenv->env_id;
+	env->env_ipc_value = value;
+	if((uint32_t)srcva < UTOP && env->env_ipc_dstva){
+		env->env_ipc_dstva = srcva;
+		env->env_ipc_perm = perm;
+	} else {
+		env->env_ipc_perm = 0;
+	}
+	env->env_status = ENV_RUNNABLE;
+
+	return 0;
 }
 
 // Block until a value is ready.  Record that you want to receive
@@ -356,7 +393,14 @@ static int
 sys_ipc_recv(void *dstva)
 {
 	// LAB 4: Your code here.
-	panic("sys_ipc_recv not implemented");
+	if((uint32_t)dstva < UTOP && (uint32_t)dstva != PTE_ADDR(dstva))
+		return -E_INVAL;
+
+	curenv->env_ipc_recving = 1;
+	curenv->env_ipc_dstva = dstva;
+	curenv->env_status = ENV_NOT_RUNNABLE;
+
+	sched_yield();
 	return 0;
 }
 
@@ -373,43 +417,49 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 		return -E_INVAL;
 	
 	switch(syscallno){
-		case SYS_cputs:
-			sys_cputs((char *)a1, a2);
-			break;
-		case SYS_cgetc:
-			ret = sys_cgetc();
-			break;
-		case SYS_getenvid:
-			ret = sys_getenvid();
-			break;
-		case SYS_env_destroy:
-			ret = sys_env_destroy((envid_t)a1);
-			break;
-		case SYS_page_alloc:
-			ret = sys_page_alloc((envid_t)a1, (void *)a2, a3);
-			break;
-		case SYS_page_map:
-			ret = sys_page_map((envid_t)a1, (void *)a2,
-						(envid_t)a3, (void *)a4, a5);
-			break;
-		case SYS_page_unmap:
-			ret = sys_page_unmap((envid_t)a1, (void *)a2);
-			break;
-		case SYS_exofork:
-			ret = sys_exofork();
-			break;
-		case SYS_env_set_status:
-			ret = sys_env_set_status((envid_t)a1, a2);
-			break;
-		case SYS_env_set_pgfault_upcall:
-			ret = sys_env_set_pgfault_upcall((envid_t)a1, (void *)a2);
-			break;
-		case SYS_yield:
-			sys_yield();
-			break;
-		default:
-			panic("syscallno %d needs process", syscallno);
-			break;
+	case SYS_cputs:
+		sys_cputs((char *)a1, a2);
+		break;
+	case SYS_cgetc:
+		ret = sys_cgetc();
+		break;
+	case SYS_getenvid:
+		ret = sys_getenvid();
+		break;
+	case SYS_env_destroy:
+		ret = sys_env_destroy((envid_t)a1);
+		break;
+	case SYS_page_alloc:
+		ret = sys_page_alloc((envid_t)a1, (void *)a2, a3);
+		break;
+	case SYS_page_map:
+		ret = sys_page_map((envid_t)a1, (void *)a2,
+					(envid_t)a3, (void *)a4, a5);
+		break;
+	case SYS_page_unmap:
+		ret = sys_page_unmap((envid_t)a1, (void *)a2);
+		break;
+	case SYS_exofork:
+		ret = sys_exofork();
+		break;
+	case SYS_env_set_status:
+		ret = sys_env_set_status((envid_t)a1, a2);
+		break;
+	case SYS_env_set_pgfault_upcall:
+		ret = sys_env_set_pgfault_upcall((envid_t)a1, (void *)a2);
+		break;
+	case SYS_yield:
+		sys_yield();
+		break;
+	case SYS_ipc_recv:
+		sys_ipc_recv((void *)a1);
+		break;
+	case SYS_ipc_try_send:
+		sys_ipc_try_send((envid_t)a1, a2, (void *)a3, (unsigned)a4);
+		break;
+	default:
+		panic("syscallno %d needs process", syscallno);
+		break;
 	}
 	curenv->env_tf.tf_regs.reg_eax = (uint32_t)ret;
 	return ret;
