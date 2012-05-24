@@ -556,12 +556,12 @@ env_run(struct Env *e)
 		if(curenv && curenv->env_status == ENV_RUNNING)
 			curenv->env_status = ENV_RUNNABLE;
 		curenv = e;
-		curenv->env_status = ENV_RUNNING;
-		curenv->env_runs++;
-		lcr3(PADDR((void *)curenv->env_pgdir));
 	}
+	curenv->env_status = ENV_RUNNING;
+	curenv->env_runs++;
 
 	unlock_kernel();
+	lcr3(PADDR((void *)curenv->env_pgdir));
 	env_pop_tf(&curenv->env_tf);
 }
 
