@@ -22,7 +22,7 @@ sys_cputs(const char *s, size_t len)
 	// Destroy the environment if not.
 
 	// LAB 3: Your code here.
-	user_mem_assert(curenv, s, len, PTE_P);
+	user_mem_assert(curenv, s, len, PTE_U|PTE_P);
 
 	// Print the string supplied by the user.
 	cprintf("%.*s", len, s);
@@ -344,7 +344,7 @@ sys_ipc_try_send(envid_t envid, uint32_t value, void *srcva, unsigned perm)
 
 	if((r = envid2env(envid, &env, 0)) < 0)
 		return r;
-	if(env->env_ipc_recving != 0)
+	if(env->env_ipc_recving == 0)
 		return -E_IPC_NOT_RECV;
 
 	if((uint32_t)srcva < UTOP){
@@ -398,6 +398,7 @@ sys_ipc_recv(void *dstva)
 
 	curenv->env_ipc_recving = 1;
 	curenv->env_ipc_dstva = dstva;
+	curenv->env_tf.tf_regs.reg_eax = 0;  //recv return 0
 	curenv->env_status = ENV_NOT_RUNNABLE;
 
 	sched_yield();
@@ -451,11 +452,11 @@ syscall(uint32_t syscallno, uint32_t a1, uint32_t a2, uint32_t a3, uint32_t a4, 
 	case SYS_yield:
 		sys_yield();
 		break;
-	case SYS_ipc_recv:
-		sys_ipc_recv((void *)a1);
-		break;
 	case SYS_ipc_try_send:
-		sys_ipc_try_send((envid_t)a1, a2, (void *)a3, (unsigned)a4);
+		ret = sys_ipc_try_send((envid_t)a1, a2, (void *)a3, (unsigned)a4);
+		break;
+	case SYS_ipc_recv:
+		ret = sys_ipc_recv((void *)a1);
 		break;
 	default:
 		panic("syscallno %d needs process", syscallno);
