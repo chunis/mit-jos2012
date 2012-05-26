@@ -5,6 +5,11 @@
 
 #include <inc/stdio.h>
 
+#define DBG(x)  (cprintf("DBG at '%s:%d': " #x " = %x\n", \
+					__FILE__, __LINE__, x))
+#define DBGd(x) (cprintf("DBG at '%s:%d': " #x " = %d\n", \
+					__FILE__, __LINE__, x))
+
 void _warn(const char*, int, const char*, ...);
 void _panic(const char*, int, const char*, ...) __attribute__((noreturn));
 
