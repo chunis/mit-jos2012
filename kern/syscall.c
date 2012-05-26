@@ -405,9 +405,7 @@ sys_ipc_recv(void *dstva)
 	curenv->env_tf.tf_regs.reg_eax = 0;  //recv return 0
 	curenv->env_status = ENV_NOT_RUNNABLE;
 
-	while(curenv->env_status != ENV_RUNNABLE){
-		sched_yield();
-	}
+	sched_yield();
 	return 0;
 }
 
