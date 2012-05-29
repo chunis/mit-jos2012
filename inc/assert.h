@@ -9,6 +9,8 @@
 					__FILE__, __LINE__, x))
 #define DBGd(x) (cprintf("DBG at '%s:%d': " #x " = %d\n", \
 					__FILE__, __LINE__, x))
+#define DBGs(x) (cprintf("DBG at '%s:%d': " #x " = %s\n", \
+					__FILE__, __LINE__, x))
 
 void _warn(const char*, int, const char*, ...);
 void _panic(const char*, int, const char*, ...) __attribute__((noreturn));
