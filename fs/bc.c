@@ -32,6 +32,7 @@ bc_pgfault(struct UTrapframe *utf)
 {
 	void *addr = (void *) utf->utf_fault_va;
 	uint32_t blockno = ((uint32_t)addr - DISKMAP) / BLKSIZE;
+	void *va = (void *)ROUNDDOWN(addr, PGSIZE);
 	int r;
 
 	// Check that the fault was within the block cache region
@@ -49,7 +50,13 @@ bc_pgfault(struct UTrapframe *utf)
 	// the page dirty).
 	//
 	// LAB 5: Your code here
-	panic("bc_pgfault not implemented");
+	// r = sys_page_alloc(0, (void *)addr, PTE_SYSCALL);
+	r = sys_page_alloc(0, va, PTE_SYSCALL);
+	if(r)
+		panic("fs: sys_page_alloc: %e", r);
+
+	ide_read(blockno * BLKSECTS, va, BLKSECTS);
+	sys_page_map(0, va, 0, va, PTE_SYSCALL);
 
 	// Check that the block we read was allocated. (exercise for
 	// the reader: why do we do this *after* reading the block
@@ -74,7 +81,15 @@ flush_block(void *addr)
 		panic("flush_block of bad va %08x", addr);
 
 	// LAB 5: Your code here.
-	panic("flush_block not implemented");
+	// Sanity check the block number.
+	if (super && blockno >= super->s_nblocks)
+		panic("reading non-existent block %08x\n", blockno);
+
+	if(va_is_mapped(addr) && va_is_dirty(addr)){
+		ide_write(blockno * BLKSECTS,
+				ROUNDDOWN(addr, PGSIZE), BLKSECTS);
+		sys_page_map(0, addr, 0, addr, PTE_SYSCALL);
+	}
 }
 
 // Test that the block cache works, by smashing the superblock and
