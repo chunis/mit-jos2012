@@ -66,6 +66,7 @@ alloc_block(void)
 	for (; i < super->s_nblocks; i++){
 		if(block_is_free(i)){
 			bitmap[i/32] &= ~(1<<(i%32));
+			flush_block(diskaddr(2 + i/BLKBITSIZE));
 			return i;
 		}
 	}
