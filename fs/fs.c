@@ -152,14 +152,16 @@ file_block_walk(struct File *f, uint32_t filebno, uint32_t **ppdiskbno, bool all
 	}
 
 	// now process NDIRECT <= filebno < (NDIRECT + NINDIRECT)
-	if(!alloc)
-		return -E_NOT_FOUND;
-	r = alloc_block();
-	if(r < 0)
-		return r;
+	if(f->f_indirect==0){
+		if(!alloc)
+			return -E_NOT_FOUND;
 
-	indp = (uint32_t *)diskaddr(r);
-	memset(indp, 0, BLKSIZE);
+		if((r = alloc_block()) < 0)
+			return r;
+		memset(diskaddr(r), 0, BLKSIZE);
+		f->f_indirect = r;
+	}
+	indp = (uint32_t *)diskaddr(f->f_indirect);
 	*ppdiskbno = &indp[filebno - NDIRECT];
 
 	return 0;
