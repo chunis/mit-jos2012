@@ -86,7 +86,7 @@ open(const char *path, int mode)
 	// send FSREQ_OPEN request
 	strcpy(fsipcbuf.open.req_path, path);
 	fsipcbuf.open.req_omode = mode;
-	if ((r = fsipc(FSREQ_OPEN, NULL)) < 0){
+	if ((r = fsipc(FSREQ_OPEN, fd_store)) < 0){
 		fd_close(fd_store, 0);
 		return r;
 	}
